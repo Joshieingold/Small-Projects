@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Tic-Tac-Toe</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+    <div class="display">
+        <h1 id="upper_text">Play Tic Tac Toe!</h1>
+    </div>
+    <section class="game_container">
+        <button id="a1" onclick="DatabaseUpdate('a1')" class="btn"><h1 id="a1_text"></h1></button>
+        <button id="a2" onclick="DatabaseUpdate('a2')" class="btn"><h1 id="a2_text"></h1></button>
+        <button id="a3" onclick="DatabaseUpdate('a3')" class="btn"><h1 id="a3_text"></h1></button>
+        <button id="b1" onclick="DatabaseUpdate('b1')" class="btn"><h1 id="b1_text"></h1></button>
+        <button id="b2" onclick="DatabaseUpdate('b2')" class="btn"><h1 id="b2_text"></h1></button>
+        <button id="b3" onclick="DatabaseUpdate('b3')" class="btn"><h1 id="b3_text"></h1></button>
+        <button id="c1" onclick="DatabaseUpdate('c1')" class="btn"><h1 id="c1_text"></h1></button>
+        <button id="c2" onclick="DatabaseUpdate('c2')" class="btn"><h1 id="c2_text"></h1></button>
+        <button id="c3" onclick="DatabaseUpdate('c3')" class="btn"><h1 id="c3_text"></h1></button>
+    </section>
+    <script src="index.js"></script>
+</body>
+</html>

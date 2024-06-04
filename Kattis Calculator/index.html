@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kattis Comparison</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css"/>
+</head>
+    <section class="Title">
+        <div> Kattis Comparison Calculator </div>
+    </section>
+<body>
+    <section class="stats_land">
+        <div class="inputs">
+            <div>Your Score</div>
+            <input type="number" id = "your_score_find" name="fname"><br><br>
+            <div>Their Score</div>
+            <input type="number" id = "their_score_find" name="fname"><br><br>
+        </div>
+        <div class="calculate">
+            <button onclick="Run()"class="btn">
+                <p>Calculate</p>
+            </button>
+        </div>
+        <div class="estimations">
+            <div id="onefour_html">Amount of 1.4 Rated Problems Required</div>
+            <div id="onefive_html">Amount of 1.5 Rated Problems Required</div>
+            <div id="onesix_html">Amount of 1.6 Rated Problems Required</div>
+        </div>
+        <div class = "completetion_bar">
+            <div id="percent_complete_html">Completion Percentage</div>
+        </div>
+    </section>
+
+</body>
+    <script src="index.js"></script>
+</html>

@@ -1,0 +1,262 @@
+from collections import defaultdict
+import tkinter as tk
+from tkinter import filedialog
+from openpyxl import load_workbook, Workbook
+import pyautogui
+import time
+import pyautogui as pg
+
+destination = ""  # Location the serials will be transferred to.
+initial = True # Keeps track of if certain extra data needs to be entered
+lpn = ""  # The LPN for the transactions
+current_location = ""  # Location the serials are expected to be coming from
+
+def CheckPixelWMS():
+    flexLocal = pyautogui.screenshot()  # Takes a screenshot of the lower screen
+    colorPixel = flexLocal.getpixel((30, 149))  # Gets the color of the loading bar in that screenshot
+    errorColor = (255, 255, 255)  # This is the color of the loading bar when an error occurs
+    goodColor = (0, 0, 0)  # This is the color when import is successful
+    
+    return colorPixel == errorColor
+
+def process_excel(file_path):
+    global wb, file_path_global
+    file_path_global = file_path
+    # Load the Excel workbook
+    wb = load_workbook(file_path, data_only=True)
+    ws = wb.active  # Use the active worksheet
+    
+    # Dictionary to store devices and their serials
+    device_dict = defaultdict(list)
+    
+    # Iterate through rows and populate the dictionary
+    for row in ws.iter_rows(min_row=2, values_only=True):  # Assuming first row is headers
+        device = row[1]  # Column B (index 1)
+        serial = row[5]  # Column F (index 5)
+        
+        if device and serial:  # Ensure both values are valid
+            device_dict[device].append(serial)
+    
+    return device_dict
+
+def select_file():
+    file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])
+    if file_path:
+        global device_dict
+        device_dict = process_excel(file_path)
+
+def save_results_to_excel(passed_list, failed_list):
+    global wb, file_path_global
+    
+    # Create new sheets for passed and failed items
+    if "Transferred" not in wb.sheetnames:
+        ws_passed = wb.create_sheet("Transferred")
+        ws_passed.append(["Device", "Serial"])
+    else:
+        ws_passed = wb["Transferred"]
+    
+    if "Failed" not in wb.sheetnames:
+        ws_failed = wb.create_sheet("Failed")
+        ws_failed.append(["Device", "Serial", "WMS Location", "LPN Status"])
+    else:
+        ws_failed = wb["Failed"]
+    
+    # Add headers
+    
+    
+    
+    # Write data
+    for device, serial in passed_list:
+        ws_passed.append([device, serial])
+    
+    for device, serial in failed_list:
+        ws_failed.append([device, serial])
+    
+    # Save workbook
+    wb.save(file_path_global)
+    print("Results saved successfully.")
+
+def WmsRun():
+    for device, serials in device_dict.items():
+        passed_list = []
+        failed_list = []
+        print(f"Processing {device}...")
+        global lpn, current_location, destination, initial
+        time.sleep(15)
+        pg.write(lpn)  # Write LPN
+        time.sleep(1)
+        pg.press("tab")
+        if initial == True:
+    
+            pg.write(current_location)  # Write current location
+            initial = False
+        time.sleep(2)
+        pg.press("tab")
+
+        # Write all serials for this device initially
+        pg.write(device)
+        pg.press("tab")
+        time.sleep(1)
+        pg.write(str(len(serials) + 1))  # Write the quantity of devices
+        pg.press("tab")
+        time.sleep(0.5)
+        
+        # First loop: Process all serials for the device
+        for serial in serials:
+            pg.write(serial)
+            pg.press("tab")
+            time.sleep(0.7)
+            # Check for error condition using pixel detection
+            error = CheckPixelWMS()
+            
+            if not error:
+                passed_list.append((device, serial))
+            else:
+                failed_list.append((device, serial))
+                pg.hotkey("ctrl", "x")  # Press Ctrl+X after an error
+                time.sleep(1)
+        
+        # After the first loop, handle failures (if any)
+
+        pg.hotkey("ctrl", "x")
+        time.sleep(0.5)
+        pg.hotkey("ctrl", "a")
+        time.sleep(0.5)
+        pg.hotkey("ctrl", "x")
+        time.sleep(0.5)
+        pg.press("tab")
+        time.sleep(0.5)
+        for i in range(4):
+            pyautogui.press('backspace')
+        if len(passed_list) > 0:
+            pg.write(str(len(passed_list)))
+            pg.press("tab")
+            time.sleep(0.3)
+        else:
+            pg.hotkey("ctrl", "x")
+            time.sleep(0.5)
+            pg.hotkey("ctrl", "a")
+            time.sleep(0.5)
+            pg.press("tab")
+            time.sleep(0.5)
+            initial = True
+            save_results_to_excel(passed_list, failed_list)
+            pass
+        for serial in passed_list:
+            pg.write(serial[1])
+            pg.press("tab")
+            time.sleep(0.2)
+        time.sleep(5)
+        # Final process step
+        pg.hotkey("ctrl", "e")
+        time.sleep(10)  # Wait for 30 seconds
+        pg.write(destination)
+        pg.press("tab")
+        time.sleep(20)
+        save_results_to_excel(passed_list, failed_list)
+
+    
+    return True
+def import_wms_database():
+    """Imports a WMS database file and finds failed serials' locations and LPN status."""
+    wms_file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])
+    
+    if not wms_file_path:
+        print("No WMS file selected.")
+        return
+
+    try:
+        # Load the WMS Excel file
+        wb_wms = load_workbook(wms_file_path, data_only=True)
+        ws_wms = wb_wms.active  # Use the first sheet
+
+        # Load the modified Excel file (file_path_global)
+        wb_modified = load_workbook(file_path_global)
+        ws_failed = wb_modified["Failed"] if "Failed" in wb_modified.sheetnames else None
+
+        if not ws_failed:
+            print("No 'Failed' sheet found in the modified file.")
+            return
+        
+        # Add headers if missing
+        if ws_failed.max_column < 3:
+            ws_failed.append(["Device", "Serial", "Location", "LPN Status"])
+
+        # Dictionary to store WMS serials for quick lookup
+        wms_data = {}
+
+        for row in ws_wms.iter_rows(min_row=2, values_only=True):
+            serial = str(row[2])  # Column C (index 2)
+            location = row[5]  # Column F (index 5)
+            lpn_status = row[6]  # Column G (index 6)
+
+            if serial:
+                wms_data[serial] = (location, lpn_status)
+
+        # Iterate over failed serials and update their location and LPN status
+        for row in ws_failed.iter_rows(min_row=2, max_col=2):  # Check Device and Serial columns
+            serial_cell = row[1]
+            if serial_cell and serial_cell.value in wms_data:
+                location, lpn_status = wms_data[serial_cell.value]
+                row[1].offset(column=1).value = location  # Column C -> Location
+                row[1].offset(column=2).value = lpn_status  # Column D -> LPN Status
+        
+        # Save the modified file
+        wb_modified.save(file_path_global)
+        print("WMS data successfully added to the 'Failed' sheet.")
+
+    except Exception as e:
+        print(f"Error processing WMS file: {e}")
+
+def set_lpn():
+    global lpn
+    lpn = entry_lpn.get()
+
+def set_current_location():
+    global current_location
+    current_location = entry_current_location.get()
+
+def set_destination():
+    global destination
+    destination = entry_dest.get()
+
+# GUI setup
+root = tk.Tk()
+root.title("Excel Device Processor")
+root.geometry("300x350")
+
+btn_select = tk.Button(root, text="Select Excel File", command=select_file)
+btn_select.pack(pady=10)
+
+# LPN input
+label_lpn = tk.Label(root, text="LPN:")
+label_lpn.pack()
+entry_lpn = tk.Entry(root)
+entry_lpn.pack(pady=5)
+
+# Current location input
+label_current_location = tk.Label(root, text="Current Location:")
+label_current_location.pack()
+entry_current_location = tk.Entry(root)
+entry_current_location.pack(pady=5)
+
+# Destination location input
+label_dest = tk.Label(root, text="Destination Location:")
+label_dest.pack()
+entry_dest = tk.Entry(root)
+entry_dest.pack(pady=5)
+
+btn_set_lpn = tk.Button(root, text="Set LPN", command=set_lpn)
+btn_set_lpn.pack(pady=5)
+
+btn_set_current_location = tk.Button(root, text="Set Current Location", command=set_current_location)
+btn_set_current_location.pack(pady=5)
+
+btn_set_dest = tk.Button(root, text="Set Destination", command=set_destination)
+btn_set_dest.pack(pady=5)
+
+btn_run = tk.Button(root, text="Run WMS Process", command=WmsRun)
+btn_run.pack(pady=10)
+btn_import_wms = tk.Button(root, text="Import WMS Database", command=import_wms_database)
+btn_import_wms.pack(pady=10)
+root.mainloop()
